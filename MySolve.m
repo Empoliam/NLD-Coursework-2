@@ -37,6 +37,11 @@ while (converged == 0) && (iterations < maxIter)
     x = xn;
     J = df(x);  %Compute jacobian at current guess
     
+    if(all(isnan(J)))
+        x = NaN;
+        break
+    end
+    
     xn = x - (J^(-1)) * f(x);   %Newton method
     
     if (all(abs(x-xn) < tol) || (norm(f(x)) < tol)) %Break loop once root is within tolerance

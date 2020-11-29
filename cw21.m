@@ -33,6 +33,7 @@ while i <= size(uIni,2)
     i = i + 1;
 end
 
+
 %%Compute stability; 0 = saddle, 1 = stable, 2 = unstable
 stab = NaN(size(uIni,2),length(yList));
 
@@ -69,7 +70,6 @@ figure()
 cMap = [[46,140,41];[245,35,8];[204,204,25]]./255;
 colormap(cMap)
 
-plot(yList(3,:,1),yList(1,:,1));
 scatter(yList(3,:,1),yList(1,:,1),15,stab(1,:),'filled')
 hold on
 scatter(yList(3,:,2),yList(1,:,2),15,stab(2,:),'filled')
@@ -117,6 +117,7 @@ a1 = 2.5;
 u1 = uIni(:,3) + 1e-2;
 
 [lambda,rDiag,x] = LyapunovQR(@(u) M(u,a1),u1,k);
+
 lyapExp = cumsum(log(rDiag),2)./[1:k;1:k];
 
 figure()
@@ -125,6 +126,5 @@ figure()
 plot(x(1,:),x(2,:),'o')
 figure()
 plot(1:k,lyapExp(1,:),1:k,lyapExp(2,:))
-
 disp("Lyupanov Exponents at 5000 iterations:")
 disp(lambda)
