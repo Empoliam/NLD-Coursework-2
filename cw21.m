@@ -3,10 +3,10 @@ clear
 fre_equations_680029911
 
 fr = @(r) pi .^2 .* r.^4 - Jbar .* r.^3 - eta .* r.^2 - (((Delta + Gamma.*r).^2)./(4.*pi.^2));
-fv =@(r) -(Delta + Gamma.*r)./(2.*pi.*r);
+fv = @(r) -(Delta + Gamma.*r)./(2.*pi.*r);
 
 T = 2.*pi./omega;
-N = 500;
+N = 50;
 
 M = @(u0,a) MyIVP(@(t,u) rhs(u,a,t),u0,[0,T],N,'dp45');
 
@@ -85,11 +85,11 @@ legend(leg, 'Stable','Unstable','Saddle','Location','northwest');
 hold off
 
 xlim([0,3])
+xlabel('a')
+ylabel('r')
 
 figure()
 
-%Colours used in plot
-cMap = [[46,140,41];[245,35,8];[204,204,25]]./255;
 colormap(cMap)
 
 plot(yList(3,:,1),yList(2,:,1));
@@ -109,6 +109,9 @@ hold off
 
 xlim([0,3])
 
+xlabel('a')
+ylabel('v')
+
 %%1c
 
 k = 5000;
@@ -120,10 +123,12 @@ u1 = uIni(:,3) + 1e-2;
 
 lyapExp = cumsum(log(rDiag),2)./[1:k;1:k];
 
+kRange = 100:k; %Range of iterates to use, neglecting transients
+
 figure()
-plot(1:k,x(1,:),'-',1:k,x(2,:),'-')
+plot(kRange,x(1,kRange),'o',kRange,x(2,kRange),'x')
 figure()
-plot(x(1,:),x(2,:),'o')
+plot(x(1,kRange),x(2,kRange),'o')
 figure()
 plot(1:k,lyapExp(1,:),1:k,lyapExp(2,:))
 disp("Lyupanov Exponents at 5000 iterations:")
