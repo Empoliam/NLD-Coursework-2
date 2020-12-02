@@ -1,8 +1,16 @@
 clear
 
+x = -1:0.25:1;
+y = x.^2;
 
-f = @(x,t) 2.*x;
+yList = [x;y]
 
-x0 = 1:10;
+i = 5;
 
-[xend, t, xt] = MyIVPVec(f,x0,[0,1],100,'dp45');
+segA = yList(:,i) - yList(:,i-1);
+segB = yList(:,i+1) - yList(:,i-1);
+segAngle = acos(dot(segA./norm(segA),segB./norm(segB)));
+
+rad2deg(segAngle)
+
+plot(x,y)

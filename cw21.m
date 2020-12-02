@@ -6,7 +6,7 @@ fr = @(r) pi .^2 .* r.^4 - Jbar .* r.^3 - eta .* r.^2 - (((Delta + Gamma.*r).^2)
 fv = @(r) -(Delta + Gamma.*r)./(2.*pi.*r);
 
 T = 2.*pi./omega;
-N = 50;
+N = floor(T/0.03);
 
 M = @(u0,a) MyIVP(@(t,u) rhs(u,a,t),u0,[0,T],N,'dp45');
 

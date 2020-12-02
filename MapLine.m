@@ -8,7 +8,7 @@ iMax = length(sNew);
 i = 1;
 while i < iMax
     
-    if( norm(yNew(:,i+1) - yNew(:,i)) > maxDist)
+    while( norm(yNew(:,i+1) - yNew(:,i)) > maxDist)
         
         sStar = (sNew(i) + sNew(i+1)) ./ 2;
         xStar = interp1(sNew,xNew',sStar,'spline')';
@@ -21,7 +21,7 @@ while i < iMax
     end
     
     if(i ~= 1)
-        
+               
         segA = yNew(:,i) - yNew(:,i-1);
         segB = yNew(:,i+1) - yNew(:,i-1);
         segAngle = acos(dot(segA./norm(segA),segB./norm(segB)));
@@ -53,7 +53,7 @@ end
 
 iMax = length(sNew);
 i = 2;
-while i < iMax && false
+while i < iMax
     
     segA = yNew(:,i) - yNew(:,i-1);
     segB = yNew(:,i+1) - yNew(:,i-1);
