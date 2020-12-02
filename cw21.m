@@ -133,3 +133,7 @@ figure()
 plot(1:k,lyapExp(1,:),1:k,lyapExp(2,:))
 disp("Lyupanov Exponents at 5000 iterations:")
 disp(lambda)
+
+udBranch = yList(:,:,3);
+udStab = stab(3,:);
+save('udBranch','udBranch','udStab')

@@ -9,8 +9,8 @@ M = @(u0,a) MyIVPVec(@(t,u) rhs(u,a,t),u0,[0,T],N,'dp45');
 
 nIterates = 25;
 
-rDivs = 500;
-vDivs = 500;
+rDivs = 200;
+vDivs = 200;
 
 rMin = -0.25;
 rMax = 2.5;
@@ -91,8 +91,6 @@ while aLoop <= length(aList)
     convRegion = reshape(convRegion,length(v),length(r));
     
     savedBasins(:,:,aLoop) = convRegion;
-    saveV(aLoop,:) = v;
-    saveR(aLoop,:) = r;
     
     trajectoryUC = nan(2,N);
     trajectoryUC(:,1) = roots(:,2) - 10e-3;
@@ -101,7 +99,7 @@ while aLoop <= length(aList)
     trajectoryUD(:,1) = roots(:,3) + 10e-3;
     
     i = 1;
-    while(i < nIterates)
+    while(i < 50)
         trajectoryUC(:,i+1) = M(trajectoryUC(:,i),a);
         trajectoryUD(:,i+1) = M(trajectoryUD(:,i),a);
         i = i + 1;
