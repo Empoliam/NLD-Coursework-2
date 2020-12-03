@@ -26,9 +26,9 @@ MySolve(A,uIni,JA)
 
 %4b
 
-[X,Y] = PeriodNSys([0.087099592220115;-1.941260383954402],0.01,F,5);
+PeriodNSys([0.087099592220115;-1.941260383954402],0.01,F,2)
 
-function [u,fu] = PeriodNSys(ui,a,f,n)
+function [fu,u] = PeriodNSys(ui,a,f,n)
 
     nU = length(ui);
     
@@ -44,8 +44,13 @@ function [u,fu] = PeriodNSys(ui,a,f,n)
                 
         i = i + 1;
     end
+    
+    i = 1;
+    while i <= n
+        fu(nU*(i-1)+1:i*nU) = f(u(nU*(i-1)+1:i*nU),a) - u(mod(i,n)*nU+1 : (mod(i,n)+1)*nU);
+        i = i + 1;
+    end
 
-    fu(nU*(n-1)+1:nU*n) = f(u(nU*(n-1)+1:nU*n),a) - u(1:nU);
     u(end) = a;
     
 end
