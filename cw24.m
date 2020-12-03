@@ -23,3 +23,29 @@ closeU = udBranch(:,closeIndex);
 uIni = [closeU;closeEVec];
 
 MySolve(A,uIni,JA)
+
+%4b
+
+[X,Y] = PeriodNSys([0.087099592220115;-1.941260383954402],0.01,F,5);
+
+function [u,fu] = PeriodNSys(ui,a,f,n)
+
+    nU = length(ui);
+    
+    u = nan(nU*n + 1,1);
+    u(1:nU) = ui;
+    
+    fu = nan(nU*n,1);
+    
+    i = 1;
+    while i < n
+        
+        u(nU*(i)+1:(i+1)*nU) = f(u(nU*(i-1)+1:(i)*nU),a);
+                
+        i = i + 1;
+    end
+
+    fu(nU*(n-1)+1:nU*n) = f(u(nU*(n-1)+1:nU*n),a) - u(1:nU);
+    u(end) = a;
+    
+end
