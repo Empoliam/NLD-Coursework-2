@@ -1,14 +1,14 @@
 function ylist = MyTrackCurve(userf,y0,ytan,varargin)
 %MyTrackCurve Pseudo-Arclength continuation of a family of input functions with variable stepsize
 %   Input:
-%   
+%
 %   userf - Column vector, function to track
 %   y0 - Column vector, numeric, starting point of arc
 %   ytan - Estimate for initial tangent
 %   varargin - Optional arguments
 %
 %   Output:
-%   
+%
 %   ylist - tracked points
 %
 
@@ -27,6 +27,7 @@ addOptional(parser,'sMin',1e-12,@isnumeric);                                    
 addOptional(parser,'doPrint',false,@islogical);                                 %Print certain alerts or warnings
 addOptional(parser,'correctGuess',false,@islogical);                            %Attempt to converge user's first guess to a true root
 addOptional(parser,'tol',1e-6,@isnumeric);                                      %MySolve tolerance
+addOptional(parser,'discardNans',false,@islogical);
 parse(parser,userf,y0,ytan,varargin{:})
 
 stepsize = parser.Results.stepsize;
@@ -39,6 +40,7 @@ sMin = parser.Results.sMin;
 doPrint = parser.Results.doPrint;
 correctGuess = parser.Results.correctGuess;
 solveTol = parser.Results.tol;
+discardNans = parser.Results.discardNans;
 
 %Intialise output matrix
 ylist = NaN(length(y0),nMax);
@@ -47,24 +49,24 @@ i = 1;
 yk = y0;
 
 while i <= nMax
-        
+    
     %If correctGuess is true, converge first guess to closes true root
     if (i == 1 && correctGuess)
         stepsize = 0;
     elseif (i == 2 && correctGuess)
         stepsize = parser.Results.stepsize;
     end
-
+    
     %Step forward in tangent direction
     yp = yk + stepsize.*ytan;
     
     %Set new functions for arclength continuation
     f = @(y) [userf(y); ytan.' * (y-yp)];
     df = @(y) MyJacobian(f,y,jStep);
-       
+    
     %Solve at new point
     [ykn,converged,~] = MySolve(f,yp,df,'tol',solveTol,'maxIter',maxSolveIter);
-        
+    
     while(converged == 0)
         
         %If convergence failed, try a smaller step, repeating above proceedure
@@ -86,14 +88,14 @@ while i <= nMax
     
     %Accept new root
     yk = ykn;
-      
+    
     %Store new root
     ylist(:,i) = yk;
     
     %Test stop condition, and break if met
     if(stop(yk))
         break
-    end     
+    end
     
     %Calculate new tangent
     A = [MyJacobian(userf,yk,jStep);ytan.'];
@@ -102,7 +104,7 @@ while i <= nMax
     
     z=A\B;
     ytan = (z./norm(z,Inf)) * sign(z' * ytan);
-        
+    
     %Increase stepsize for next iteration
     stepsize = min(stepsize*1.25,sMax);
     
@@ -110,10 +112,8 @@ while i <= nMax
     
 end
 
-%Suggest improved nMax value to user
-if (i < nMax && doPrint)
-    disp(strcat("MyTrackCurve converged after ", num2str(i), " iterations. Consider using a smaller value of nMax to save memory."))
+if(i < nMax && discardNans)
+    ylist = ylist(:,1:i);
 end
-
 end
 
