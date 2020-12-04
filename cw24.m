@@ -35,17 +35,49 @@ scatter(udBranch(3,:),udBranch(1,:),15,udStab,'filled')
 
 periodJ = 1;
 FA = @(u) PeriodNSys(u(1:end-1),u(end),M,2^periodJ);
+JFA = @(u) MyJacobian(@(y) FA([y;u(end)]),u(1:end-1),1e-6);
 
 uIni2 = [apd1(1:end-1)+magDisp*eVecs2;apd1(1:end-1)-magDisp*eVecs2;apd1(end)];
 
-p2List = MyTrackCurve(FA,uIni2,[eVecs2;-eVecs2;0],'stop',@(y) y(end) > 3,'sMax',1e-2);
+p2List = MyTrackCurve(FA,uIni2,[eVecs2;-eVecs2;0],'stop',@(y) y(end) > 3,'sMax',1e-3);
 
-M(M(p2List(1:2,10),p2List(end,10)),p2List(end,10)) - p2List(1:2,10)
+i = 1;
+closeEvecIndex = 1;
+closeEvec = [];
+closeEval = inf;
+while i <= size(p2List,2)
+   
+    [pEVec,pEVal] = eigs(JFA(p2List(:,i)),1,-1);
+    
+    eValDist = abs(-1-pEVal);
+    if(eValDist < abs(-1-closeEval))
+        closeEvecIndex = i;
+        closeEvec = pEVec;
+        closeEval = pEVal;
+    end
+        
+    i = i + 1;
+end
+
+PDBSys = @(u) [FA(u(1:length(uIni2)));...
+    JFA(u(1:length(uIni2)))*u(length(uIni2)+1:end)+u(length(uIni2)+1:end);...
+    u(length(uIni2)+1:end)'*u(length(uIni2)+1:end)-1];
+
+pdbStartU = [p2List(:,closeEvecIndex);closeEvec];
+
+pdb3 = MySolve(PDBSys,pdbStartU,@(y) MyJacobian(PDBSys,y,1e-6))
+
 
 hold on
 scatter(p2List(end,:),p2List(1,:),15)
 scatter(p2List(end,:),p2List(3,:),15)
+plot(pdbStartU(5),pdbStartU(1),'bx')
+plot(pdbStartU(5),pdbStartU(3),'bx')
+plot(pdb3(5),pdb3(1),'kx')
+plot(pdb3(5),pdb3(3),'kx')
 hold off
+
+PeriodNGuSys(p2List(1:4,10),p2List(end,10),M,2,-1)
 
 function fu = PeriodNSys(u,a,f,n)
 
@@ -59,4 +91,44 @@ function fu = PeriodNSys(u,a,f,n)
         i = i + 1;
     end
  
+end
+
+function gu = PeriodNGuSys(u,a,f,n,s)
+
+    nU = length(u)/n;
+    gu = zeros(n*nU);
+    
+    if(n == 1)
+        gu = MyJacobian(f(u,a),u,1e-6);
+    else
+     
+        i = 1;
+        while i <= n
+           
+            indexRange = nU*(i-1)+1:i*nU;         
+            gu(indexRange,indexRange) = MyJacobian(@(y) f(y,a),u(indexRange),1e-6);
+            
+            i = i + 1;
+            
+        end
+        
+    end
+    
+end
+
+function ga = PeriodNGaSys(u,a,f,n)
+
+    nU = length(u)/n;
+    
+    ga = nan(nU*n,1);
+        
+    i = 1;
+    while i <= n
+               
+        ga(nU*(i-1)+1:i*nU) = MyJacobian(@(y) f(u(nU*(i-1)+1:i*nU),y),a,1e-6);
+        
+        i = i + 1;
+        
+    end
+
 end

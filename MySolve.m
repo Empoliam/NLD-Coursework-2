@@ -44,7 +44,7 @@ while (converged == 0) && (iterations < maxIter)
     
     xn = x - (J^(-1)) * f(x);   %Newton method
     
-    if (all(abs(x-xn) < tol) || (norm(f(x)) < tol)) %Break loop once root is within tolerance
+    if (all(abs(x-xn) < tol) && (norm(f(x)) < tol)) %Break loop once root is within tolerance
         converged = 1;
         x = xn;
         return
