@@ -10,8 +10,12 @@ magJac = 1e-8;
 magDisp = 1e-8;
 magH = 1e-8;
 
+periodMax = 4;
+
 M = @(u0,a) MyIVPVec(@(t,u) rhs(u,a,t),u0,[0,T],N,'dp45');
 JM = @(u0,a) MyJacobian(@(u) M(u,a),u0,magJac);
+
+apdList = zeros(1,periodMax+1);
 
 %4a
 A = @(u) [M(u(1:2),u(3))-u(1:2);...
@@ -29,28 +33,34 @@ uIni = [closeU;closeEVec];
 pd1 = MySolve(A,uIni,JA);
 pd1 = pd1(1:3);
 
+apdList(1) = pd1(end);
+
+figure()
+
+plot(udBranch(3,closeIndex-10:closeIndex),udBranch(1,closeIndex-10:closeIndex))
+hold on
+plot(pd1(3),pd1(1),'kx')
+hold off
+
+xlabel('a')
+ylabel('r')
+title('Bifurcation diagram')
+
+drawnow
 
 %4b
 %Track p2 orbits
-figure()
-
 [eVecs2,~] = eigs(JM(pd1(1:end-1),pd1(end)),1,-1);
 F2A = @(u) PeriodNFSys(u(1:end-1),u(end),M,2^1);
 JF2A = @(u) MyJacobian(@(y) F2A([y;u(end)]),u(1:end-1),magJac);
 uIni2 = [pd1(1:end-1)+magDisp*eVecs2;pd1(1:end-1)-magDisp*eVecs2;pd1(end)];
 p2List = MyTrackCurve(F2A,uIni2,[eVecs2;-eVecs2;0],'stop',@(y) y(end) > 3,'sMax',1e-2,'nMax',100);
-% hold on
-% scatter(p2List(end,:),p2List(1,:),15)
-% scatter(p2List(end,:),p2List(3,:),15)
-% hold off
 
 branchList = p2List;
 
 %Compute further orbits
-for periodI = 1:7
-        
-    periodI
-    
+for periodI = 1:periodMax
+            
     FA = @(u) PeriodNFSys(u(1:end-1),u(end),M,2^periodI);
     GU = @(u,s) PeriodNGuSys(u(1:end-1),u(end),M,2^periodI,s);
     GA = @(u) PeriodNGaSys(u(1:end-1),u(end),M,2^periodI);
@@ -113,7 +123,9 @@ for periodI = 1:7
 %     pdbSolve = MySolve(PDBSys,uGuess,ApproxJ);
     pdby = pdbSolve(1:length(closeU));
     pdbz = pdbSolve(length(closeU)+1:end);
-        
+    
+    apdList(periodI+1) = pdby(end);
+    
     hold on
     sizeN = (length(closeU)-1)/2^periodI;
     i = 1;
@@ -153,6 +165,13 @@ while i < sizeN*2^periodI
     i = i + sizeN;
 end
 hold off
+
+i = 1;
+while i < periodMax
+    aRatio = (apdList(i+1)-apdList(i))/(apdList(i+2)-apdList(i+1));
+    disp(aRatio)
+    i = i + 1;
+end
 
 %%Functions
 
