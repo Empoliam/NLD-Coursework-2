@@ -6,9 +6,9 @@ load('udBranch.mat')
 T = 2.*pi./omega;
 N = floor(T/0.03);
 
-magJac = 1e-8;
-magDisp = 1e-8;
-magH = 1e-8;
+magJac = 1e-10;
+magDisp = 1e-10;
+magH = 1e-10;
 
 periodMax = 4;
 
@@ -119,7 +119,7 @@ for periodI = 1:periodMax
 %     'myjac'
 %     MyJacobian(PDBSys,uGuess,magJac)
     
-    pdbSolve = MySolve(PDBSys,uGuess,@(u) MyJacobian(PDBSys,u,magJac),'maxIter',25);
+    pdbSolve = MySolve(PDBSys,uGuess,@(u) MyJacobian(PDBSys,u,magJac),'maxIter',50);
 %     pdbSolve = MySolve(PDBSys,uGuess,ApproxJ);
     pdby = pdbSolve(1:length(closeU));
     pdbz = pdbSolve(length(closeU)+1:end);
@@ -146,13 +146,9 @@ for periodI = 1:periodMax
     
     uIniB = [pdby(1:end-1) + magDisp *pdbz; pdby(1:end-1) - magDisp * pdbz; pdby(end)];
     tanIniB = [pdbz;-pdbz;0];
-    
-    tic
-    
-    branchList = MyTrackCurve(FB,uIniB,tanIniB,'stop',@(y) y(end) > 3,'sMax',(1e-2)/(2^(periodI-1)),'nMax',25);
-    
-    toc
-    
+            
+    branchList = MyTrackCurve(FB,uIniB,tanIniB,'stop',@(y) y(end) > 3,'sMax',(1e-2)/(2^(periodI)),'nMax',40);
+     
 end
 
 periodI = periodI + 1;

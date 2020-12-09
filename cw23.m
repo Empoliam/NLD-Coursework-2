@@ -11,6 +11,7 @@ N = floor(T/0.03);
 F = @(u0,a) MyIVPVec(@(t,u) rhs(u,a,t),u0,[0,T],N,'dp45');
 Finv = @(u0,a) MyIVPVec(@(t,u) rhs(u,a,t),u0,[0,-T],N,'dp45');
 
+%Number of refinements to perform on manifolds
 mapLineIterates = 4;
 
 aLoop = 1;
