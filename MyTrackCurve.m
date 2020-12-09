@@ -28,6 +28,7 @@ addOptional(parser,'doPrint',false,@islogical);                                 
 addOptional(parser,'correctGuess',false,@islogical);                            %Attempt to converge user's first guess to a true root
 addOptional(parser,'tol',1e-6,@isnumeric);                                      %MySolve tolerance
 addOptional(parser,'discardNans',false,@islogical);
+addOptional(parser,'userdf',@(y) 0,@(func) isa(func,'function_handle'))
 parse(parser,userf,y0,ytan,varargin{:})
 
 stepsize = parser.Results.stepsize;
@@ -41,6 +42,13 @@ doPrint = parser.Results.doPrint;
 correctGuess = parser.Results.correctGuess;
 solveTol = parser.Results.tol;
 discardNans = parser.Results.discardNans;
+
+if (ismember('userdf',parser.UsingDefaults))
+    usinguserdf = false;
+else
+    usinguserdf = true;
+    userdf = parser.Results.userdf;
+end
 
 %Intialise output matrix
 ylist = NaN(length(y0),nMax);
@@ -62,8 +70,13 @@ while i <= nMax
     
     %Set new functions for arclength continuation
     f = @(y) [userf(y); ytan.' * (y-yp)];
-    df = @(y) MyJacobian(f,y,jStep);
-        
+    
+    if (~usinguserdf)
+        df = @(y) MyJacobian(f,y,jStep);
+    else
+        df = @(y) [userdf(y);ytan.'];
+    end
+    
     %Solve at new point
     [ykn,converged,~] = MySolve(f,yp,df,'tol',solveTol,'maxIter',maxSolveIter);
     
@@ -80,12 +93,17 @@ while i <= nMax
         yp = yk + stepsize.*ytan;
         
         f = @(y) [userf(y); ytan.' * (y-yp)];
-        df = @(y) MyJacobian(f,y,jStep);
+        
+        if (~usinguserdf)
+            df = @(y) MyJacobian(f,y,jStep);
+        else
+            df = @(y) [userdf(y);ytan.'];
+        end
         
         [ykn,converged,~] = MySolve(f,yp,df,'tol',solveTol,'maxIter',maxSolveIter);
         
     end
-       
+    
     %Accept new root
     yk = ykn;
     
@@ -96,9 +114,13 @@ while i <= nMax
     if(stop(yk))
         break
     end
-        
+    
     %Calculate new tangent
-    A = [MyJacobian(userf,yk,jStep);ytan.'];
+    if (~usinguserdf)
+        A = [MyJacobian(userf,yk,jStep);ytan.'];
+    else
+        A = [userdf(yk);ytan.'];
+    end
     I = eye(length(A));
     B = I(:,end);
     

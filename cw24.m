@@ -10,7 +10,7 @@ magJac = 1e-10;
 magDisp = 1e-10;
 magH = 1e-10;
 
-periodMax = 4;
+periodMax = 7;
 
 M = @(u0,a) MyIVPVec(@(t,u) rhs(u,a,t),u0,[0,T],N,'dp45');
 JM = @(u0,a) MyJacobian(@(u) M(u,a),u0,magJac);
@@ -60,7 +60,9 @@ branchList = p2List;
 
 %Compute further orbits
 for periodI = 1:periodMax
-            
+     
+    tic
+    
     FA = @(u) PeriodNFSys(u(1:end-1),u(end),M,2^periodI);
     GU = @(u,s) PeriodNGuSys(u(1:end-1),u(end),M,2^periodI,s);
     GA = @(u) PeriodNGaSys(u(1:end-1),u(end),M,2^periodI);
@@ -97,10 +99,10 @@ for periodI = 1:periodMax
     
     PDBSys = @(u) [FA(u(yIndices));...
         GU(u(yIndices),1)*u(length(closeU)+1:end) ;...
-        u(length(closeU)+1:end)'*u(length(closeU)+1:end)-1];
+        u(length(closeU)+1:end).'*u(length(closeU)+1:end)-1];
     
-    [zGuess,~] = eigs(GU(closeU,1),1,'smallestreal');
-    uGuess = [closeU;zGuess];
+    [zGuess,~] = eigs(GU(closeU,1),1,0);
+    uGuess = [closeU;real(zGuess)];
     
     JUL = @(u) GU(u(yIndices),-1);
     JUC = @(u) GA(u(yIndices));
@@ -110,17 +112,12 @@ for periodI = 1:periodMax
     JCR = @(u) GU(u(yIndices),1);
     JLL = @(u) zeros(1,length(closeU)-1);
     JLC = @(u) 0;
-    JLR = @(u) 2*u(length(closeU)+1:end)';
+    JLR = @(u) 2*u(length(closeU)+1:end).';
     
     ApproxJ = @(u) [JUL(u),JUC(u),JUR(u);JCL(u),JCC(u),JCR(u);JLL(u),JLC(u),JLR(u)];
-    
-%     'approx'
-%     ApproxJ(uGuess)
-%     'myjac'
-%     MyJacobian(PDBSys,uGuess,magJac)
-    
-    pdbSolve = MySolve(PDBSys,uGuess,@(u) MyJacobian(PDBSys,u,magJac),'maxIter',50);
-%     pdbSolve = MySolve(PDBSys,uGuess,ApproxJ);
+        
+    %pdbSolve = MySolve(PDBSys,uGuess,@(u) MyJacobian(PDBSys,u,magJac),'maxIter',50);
+    pdbSolve = MySolve(PDBSys,uGuess,ApproxJ,'maxIter',25);
     pdby = pdbSolve(1:length(closeU));
     pdbz = pdbSolve(length(closeU)+1:end);
     
@@ -142,13 +139,15 @@ for periodI = 1:periodMax
     %Track new orbits
     
     FB = @(u) PeriodNFSys(u(1:end-1),u(end),M,2^(periodI+1));
-    FBJEst = @(u) [PeriodNGuSys(u(1:end-1),u(end),M,2^(periodI+1),-1),PeriodNGaSys(u,a,f,2^(periodI+1))];
+    FBJEst = @(u) [PeriodNGuSys(u(1:end-1),u(end),M,2^(periodI+1),-1),PeriodNGaSys(u(1:end-1),u(end),M,2^(periodI+1))];
     
     uIniB = [pdby(1:end-1) + magDisp *pdbz; pdby(1:end-1) - magDisp * pdbz; pdby(end)];
     tanIniB = [pdbz;-pdbz;0];
-            
-    branchList = MyTrackCurve(FB,uIniB,tanIniB,'stop',@(y) y(end) > 3,'sMax',(1e-2)/(2^(periodI)),'nMax',40);
-     
+    
+    branchList = MyTrackCurve(FB,uIniB,tanIniB,'stop',@(y) y(end) > 3,'sMax',(1e-2)/(2^(periodI)),'nMax',40,'userdf',FBJEst,'stepsize',1e-4);
+    
+    toc
+    
 end
 
 periodI = periodI + 1;
