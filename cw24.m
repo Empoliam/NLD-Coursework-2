@@ -117,10 +117,10 @@ for periodI = 1:periodMax
     ApproxJ = @(u) [JUL(u),JUC(u),JUR(u);JCL(u),JCC(u),JCR(u);JLL(u),JLC(u),JLR(u)];
         
     %pdbSolve = MySolve(PDBSys,uGuess,@(u) MyJacobian(PDBSys,u,magJac),'maxIter',50);
-    pdbSolve = MySolve(PDBSys,uGuess,ApproxJ,'maxIter',25);
+    pdbSolve = MySolve(PDBSys,uGuess,ApproxJ,'maxIter',25,'tol',1e-8);
     pdby = pdbSolve(1:length(closeU));
     pdbz = pdbSolve(length(closeU)+1:end);
-    
+        
     apdList(periodI+1) = pdby(end);
     
     hold on
