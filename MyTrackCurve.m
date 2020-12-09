@@ -63,7 +63,7 @@ while i <= nMax
     %Set new functions for arclength continuation
     f = @(y) [userf(y); ytan.' * (y-yp)];
     df = @(y) MyJacobian(f,y,jStep);
-    
+        
     %Solve at new point
     [ykn,converged,~] = MySolve(f,yp,df,'tol',solveTol,'maxIter',maxSolveIter);
     
@@ -85,7 +85,7 @@ while i <= nMax
         [ykn,converged,~] = MySolve(f,yp,df,'tol',solveTol,'maxIter',maxSolveIter);
         
     end
-    
+       
     %Accept new root
     yk = ykn;
     
@@ -96,7 +96,7 @@ while i <= nMax
     if(stop(yk))
         break
     end
-    
+        
     %Calculate new tangent
     A = [MyJacobian(userf,yk,jStep);ytan.'];
     I = eye(length(A));

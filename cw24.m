@@ -6,17 +6,18 @@ load('udBranch.mat')
 T = 2.*pi./omega;
 N = floor(T/0.03);
 
+magJac = 1e-8;
 magDisp = 1e-8;
 magH = 1e-8;
 
 M = @(u0,a) MyIVPVec(@(t,u) rhs(u,a,t),u0,[0,T],N,'dp45');
-JM = @(u0,a) MyJacobian(@(u) M(u,a),u0,1e-6);
+JM = @(u0,a) MyJacobian(@(u) M(u,a),u0,magJac);
 
 %4a
 A = @(u) [M(u(1:2),u(3))-u(1:2);...
     JM(u(1:2),u(3))*u(4:5)+u(4:5);...
     u(4:5)'*u(4:5)-1];
-JA = @(u) MyJacobian(A,u,1e-6);
+JA = @(u) MyJacobian(A,u,magJac);
 
 %Locate stable point close to pd
 closeIndex = find(udStab==3,1);
@@ -35,7 +36,7 @@ figure()
 
 [eVecs2,~] = eigs(JM(pd1(1:end-1),pd1(end)),1,-1);
 F2A = @(u) PeriodNFSys(u(1:end-1),u(end),M,2^1);
-JF2A = @(u) MyJacobian(@(y) F2A([y;u(end)]),u(1:end-1),1e-8);
+JF2A = @(u) MyJacobian(@(y) F2A([y;u(end)]),u(1:end-1),magJac);
 uIni2 = [pd1(1:end-1)+magDisp*eVecs2;pd1(1:end-1)-magDisp*eVecs2;pd1(end)];
 p2List = MyTrackCurve(F2A,uIni2,[eVecs2;-eVecs2;0],'stop',@(y) y(end) > 3,'sMax',1e-2,'nMax',100);
 % hold on
@@ -46,9 +47,8 @@ p2List = MyTrackCurve(F2A,uIni2,[eVecs2;-eVecs2;0],'stop',@(y) y(end) > 3,'sMax'
 branchList = p2List;
 
 %Compute further orbits
-for periodI = 1:4
-    tic
-   
+for periodI = 1:7
+        
     periodI
     
     FA = @(u) PeriodNFSys(u(1:end-1),u(end),M,2^periodI);
@@ -68,9 +68,10 @@ for periodI = 1:4
             
             crossingCriteria = any(newEvals(oldEvals <= -1) >= -1) || any(newEvals(oldEvals >= -1) <= -1);
             if(crossingCriteria)
-                               
-                closeIndex = i;
+                
+                closeIndex = i;            
                 break
+                              
             else
                 oldEvals = newEvals;
             end
@@ -88,7 +89,7 @@ for periodI = 1:4
         GU(u(yIndices),1)*u(length(closeU)+1:end) ;...
         u(length(closeU)+1:end)'*u(length(closeU)+1:end)-1];
     
-    [zGuess,~] = eigs(PeriodNGuSys(closeU(1:end-1),closeU(end),M,2^(periodI),1),1,'smallestreal');
+    [zGuess,~] = eigs(GU(closeU,1),1,'smallestreal');
     uGuess = [closeU;zGuess];
     
     JUL = @(u) GU(u(yIndices),-1);
@@ -102,34 +103,56 @@ for periodI = 1:4
     JLR = @(u) 2*u(length(closeU)+1:end)';
     
     ApproxJ = @(u) [JUL(u),JUC(u),JUR(u);JCL(u),JCC(u),JCR(u);JLL(u),JLC(u),JLR(u)];
-     
-%     imag(ApproxJ(uGuess))
-%     imag(MyJacobian(PDBSys,uGuess,1e-10))
     
-    pdbSolve = MySolve(PDBSys,uGuess,@(u) MyJacobian(PDBSys,u,1e-10));
+%     'approx'
+%     ApproxJ(uGuess)
+%     'myjac'
+%     MyJacobian(PDBSys,uGuess,magJac)
+    
+    pdbSolve = MySolve(PDBSys,uGuess,@(u) MyJacobian(PDBSys,u,magJac),'maxIter',25);
+%     pdbSolve = MySolve(PDBSys,uGuess,ApproxJ);
     pdby = pdbSolve(1:length(closeU));
     pdbz = pdbSolve(length(closeU)+1:end);
-    
+        
     hold on
-    scatter(branchList(end,:),branchList(1,:),15)
-%     scatter(branchList(end,:),branchList(3,:),15)
-    plot(pdby(end),pdby(1),'kx')
-%     plot(pdb3(length(closeU)),pdb3(3),'kx')
+    sizeN = (length(closeU)-1)/2^periodI;
+    i = 1;
+    while i < length(closeU)
+        
+        plot(branchList(end,1:closeIndex),branchList(i,1:closeIndex))
+        plot(pdby(end),pdby(i),'kx')
+        
+        i = i + sizeN;
+    end
     hold off
     drawnow
     
     %Track new orbits
     
     FB = @(u) PeriodNFSys(u(1:end-1),u(end),M,2^(periodI+1));
+    FBJEst = @(u) [PeriodNGuSys(u(1:end-1),u(end),M,2^(periodI+1),-1),PeriodNGaSys(u,a,f,2^(periodI+1))];
     
     uIniB = [pdby(1:end-1) + magDisp *pdbz; pdby(1:end-1) - magDisp * pdbz; pdby(end)];
     tanIniB = [pdbz;-pdbz;0];
     
-    branchList = MyTrackCurve(FB,uIniB,tanIniB,'stop',@(y) y(end) > 3,'sMax',1e-2,'nMax',25);
+    tic
+    
+    branchList = MyTrackCurve(FB,uIniB,tanIniB,'stop',@(y) y(end) > 3,'sMax',(1e-2)/(2^(periodI-1)),'nMax',25);
     
     toc
     
 end
+
+periodI = periodI + 1;
+hold on
+i = 1;
+while i < sizeN*2^periodI
+    
+    plot(branchList(end,:),branchList(i,:))
+    
+    i = i + sizeN;
+end
+hold off
 
 %%Functions
 
@@ -142,7 +165,7 @@ J = eye(nU);
 i = 1;
 while i <= n
     
-    J = J * MyJacobian(@(y) f(y,a),u(nU*(i-1)+1:i*nU),1e-8);
+    J = MyJacobian(@(y) f(y,a),u(nU*(i-1)+1:i*nU),1e-10) * J;
     i = i + 1;
     
 end
@@ -174,7 +197,7 @@ i = 1;
 while i <= n
     
     indexRange = nU*(i-1)+1:i*nU;
-    gu(indexRange,indexRange) = MyJacobian(@(y) f(y,a),u(indexRange),1e-8);
+    gu(indexRange,indexRange) = MyJacobian(@(y) f(y,a),u(indexRange),1e-10);
     
     i = i + 1;
     
